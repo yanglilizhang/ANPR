@@ -35,7 +35,7 @@ from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first
 
 logger = logging.getLogger(__name__)
-begin_save=1
+begin_save = 1
 try:
     import wandb
 except ImportError:
@@ -257,7 +257,8 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
         if rank != -1:
             dataloader.sampler.set_epoch(epoch)
         pbar = enumerate(dataloader)
-        logger.info(('\n' + '%10s' * 9) % ('Epoch', 'gpu_mem', 'box', 'obj', 'cls', 'landmark', 'total', 'targets', 'img_size'))
+        logger.info(
+            ('\n' + '%10s' * 9) % ('Epoch', 'gpu_mem', 'box', 'obj', 'cls', 'landmark', 'total', 'targets', 'img_size'))
         if rank in [-1, 0]:
             pbar = tqdm(pbar, total=nb)  # progress bar
         optimizer.zero_grad()
@@ -385,13 +386,13 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
                 torch.save(ckpt, last)
                 if best_fitness == fi:
                     ckpt_best = {
-                            'epoch': epoch,
-                            'best_fitness': best_fitness,
-                            # 'training_results': f.read(),
-                            'model': ema.ema,
-                            # 'optimizer': None if final_epoch else optimizer.state_dict(),
-                            # 'wandb_id': wandb_run.id if wandb else None
-                            }
+                        'epoch': epoch,
+                        'best_fitness': best_fitness,
+                        # 'training_results': f.read(),
+                        'model': ema.ema,
+                        # 'optimizer': None if final_epoch else optimizer.state_dict(),
+                        # 'wandb_id': wandb_run.id if wandb else None
+                    }
                     torch.save(ckpt_best, best)
                 del ckpt
         # end epoch ----------------------------------------------------------------------------------------------------
@@ -440,32 +441,49 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
     return results
 
 
+# https://blog.csdn.net/m0_47026232/article/details/129869740 训练参数解析
+# https://blog.csdn.net/flamebox/article/details/123011129
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='weights/plate_detect.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='models/yolov5n-0.5.yaml', help='model.yaml path')
+    # data：存储训练、测试数据的文件
     parser.add_argument('--data', type=str, default='data/widerface.yaml', help='data.yaml path')
+
     parser.add_argument('--hyp', type=str, default='data/hyp.scratch.yaml', help='hyperparameters path')
+    # epochs：指的就是训练过程中整个数据集将被迭代多少次, 显卡不行你就调小点。
     parser.add_argument('--epochs', type=int, default=120)
+    # batch-size：一次看完多少张图片才进行权重更新，梯度下降的mini-batch,显卡不行你就调小点。
     parser.add_argument('--batch-size', type=int, default=32, help='total batch size for all GPUs')
+    # img-size：输入图片宽高,显卡不行你就调小点。
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='[train, test] image sizes')
+    # rect：进行矩形训练
     parser.add_argument('--rect', action='store_true', help='rectangular training')
+    # resume：恢复最近保存的模型开始训练
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
+    # nosave：仅保存最终checkpoint
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
+    # notest：仅测试最后的epoch
     parser.add_argument('--notest', action='store_true', help='only test final epoch')
     parser.add_argument('--noautoanchor', action='store_true', help='disable autoanchor check')
+    # evolve：进化超参数
     parser.add_argument('--evolve', action='store_true', help='evolve hyperparameters')
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
+    # cache-images：缓存图像以加快训练速度
     parser.add_argument('--cache-images', action='store_true', help='cache images for faster training')
     parser.add_argument('--image-weights', action='store_true', help='use weighted image selection for training')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    # multi - scale：多尺度训练，img - size + / - 50 %
     parser.add_argument('--multi-scale', action='store_true', default=True, help='vary img-size +/- 50%%')
+    # single - cls：单类别的训练集
     parser.add_argument('--single-cls', action='store_true', help='train multi-class data as single-class')
+    # adam：使用adam优化
     parser.add_argument('--adam', action='store_true', help='use torch.optim.Adam() optimizer')
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
     parser.add_argument('--local_rank', type=int, default=-1, help='DDP parameter, do not modify')
     parser.add_argument('--log-imgs', type=int, default=16, help='number of images for W&B logging, max 100')
     parser.add_argument('--log-artifacts', action='store_true', help='log artifacts, i.e. final trained model')
+    # 指数据装载时cpu所使用的线程数，默认为8. https://blog.csdn.net/flamebox/article/details/123011129
     parser.add_argument('--workers', type=int, default=4, help='maximum number of dataloader workers')
     parser.add_argument('--project', default='runs/train', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
