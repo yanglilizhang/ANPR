@@ -296,8 +296,14 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
 
             # Backward
             print('L222222222222222222222222222222222222222222:')
-            with torch.autograd.set_detect_anomaly(True):
-                scaler.scale(loss).backward(retain_graph=True)
+            #         一般情况下，反向传播中有个别Nan值，并不会引起训练发生报错，
+            #         只有在打开自动微分异常监测时：torch.autograd.detect_anomaly(True)，才会出现任意Nan都会引起模型报错。
+
+            # 在模型正常训练阶段不建议打开autograd.detect_anomaly，会使训练速度大大减慢，以笔者
+            # 这里的测试，打开后，原本4个小时的训练被减慢至7.5个小时；打开后可以辅助找到出现Nan值的位置。
+            # with torch.autograd.set_detect_anomaly(True):
+            #     scaler.scale(loss).backward(retain_graph=True)
+            scaler.scale(loss).backward()
 
             # Optimize
             if ni % accumulate == 0:
