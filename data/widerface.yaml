@@ -24,3 +24,8 @@ nc: 2
 
 # class names
 names: [ 'single','double']
+
+#PyTorch RuntimeError: Function ‘CudnnBatchNormBackward0‘ returned nan values in its 0th output. 解决方法
+#1. 查看输入是否含有nan或者全是0
+#2. 查看最后的loss是否是nan
+#3. 最难debug的一点是当learning rate过高的时候也会报题目中的错
