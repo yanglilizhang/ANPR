@@ -35,6 +35,16 @@ def decodePlate(preds):
     return newPreds,index
 
 def image_processing(img,device):
+    """
+    对输入图像进行处理并转换为张量
+
+    参数：
+    img：输入图像（numpy数组）
+    device：指定设备（torch.device）
+
+    返回值：
+    img：处理后的图像张量
+    """
     img = cv2.resize(img, (168,48))
     img = np.reshape(img, (48, 168, 3))
 
@@ -77,6 +87,13 @@ def get_plate_result(img,device,model,is_color=False):
         return plate,prob
 
 def init_model(device,model_path,is_color = False):
+    """
+     初始化识别车牌号及颜色的模型
+
+     参数：
+     device：CPU/GPU
+     model_path：模型文件的路径
+     """
     # print( print(sys.path))
     # model_path ="plate_recognition/model/checkpoint_61_acc_0.9715.pth"
     check_point = torch.load(model_path,map_location=device)
@@ -85,10 +102,15 @@ def init_model(device,model_path,is_color = False):
     color_classes=0
     if is_color:
         color_classes=5           #颜色类别数
+
+    # 创建模型对象
     model = myNet_ocr_color(num_classes=len(plateName),export=True,cfg=cfg,color_num=color_classes)
-   
+
+    # 载入模型权重
     model.load_state_dict(model_state,strict=False)
+    # 将模型移动到指定设备上
     model.to(device)
+    # 设置模型为评估模式
     model.eval()
     return model
 
