@@ -52,7 +52,6 @@ python anpr.py
    The result exists in the run folder.
 4. **Detection model onnx export**
    To export the detection model to onnx, onnx sim needs to be installed. **[onnx-simplifier](https://github.com/daquexian/onnx-simplifier)**
-   **检测模型导出onnx,需要安装onnx-sim onnx-simplifier**
 
    ```
    1. python export.py --weights ./weights/plate_detect.pt --img 640 --batch 1
@@ -114,4 +113,42 @@ RuntimeError: one of the variables needed for gradient computation has been modi
 Hint: the backtrace further above shows the operation that failed to compute its gradient.
 The variable in question was changed in there or anywhere later. Good luck!
 
+pip install onnx
+pip install onnxruntime
+安装onnxsim:
+pip install onnx-simplifier
+安装失败 https://cloud.tencent.com/developer/ask/sof/106982617
+Collecting onnx
+  Using cached onnx-1.11.0.tar.gz (9.9 MB)
+  Preparing metadata (setup.py) ... error
+  error: subprocess-exited-with-error
 
+  × python setup.py egg_info did not run successfully.
+  │ exit code: 1
+  ╰─> [7 lines of output]
+      fatal: not a git repository (or any of the parent directories): .git
+      Traceback (most recent call last):
+        File "<string>", line 2, in <module>
+        File "<pip-setuptools-caller>", line 34, in <module>
+        File "C:\Users\Red007Master\AppData\Local\Temp\pip-download-coisn9j3\onnx_f49974f8ac4344abaca0eecae41c15e4\setup.py", line 86, in <module>
+          assert CMAKE, 'Could not find "cmake" executable!'
+      AssertionError: Could not find "cmake" executable!
+      [end of output]
+
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+error: metadata-generation-failed
+
+需安装cmake：sudo apt install cmake 或 brew install cmake
+
+解决方法：电脑安装cmake
+没安装brew，先安装brew 
+/bin/zsh -c "$(curl -fsSL https://gitee.com/cunkai/HomebrewCN/raw/master/Homebrew.sh)"
+安好brew后输入：
+brew install cmake
+brew install protobuf
+最后 pip install onnx
+
+# [可选] 使用阿里源加速
+pip install -i http://mirrors.aliyun.com/pypi/simple onnx-simplifier
+# 导出onnx模型 python export.py --weights ./weights/plate_detect-copy.pt --img 640 --batch 1
+# 简化onnx模型 onnxsim weights/plate_detect.onnx weights/plate_detect.onnx
