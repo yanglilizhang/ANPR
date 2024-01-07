@@ -235,6 +235,13 @@ def get_second(capture):
         duration = FrameNumber/rate  # 帧速率/视频总帧数 是时间，除以60之后单位是分钟
         return int(rate),int(FrameNumber),int(duration)    
 
+# 环境要求: python >=3.6 pytorch >=1.7
+# 图片测试demo: 直接运行detect_plate.py 或者运行如下命令行：测试文件夹imgs，结果保存再 result 文件夹中
+# python detect_plate.py --detect_model weights/plate_detect.pt  --rec_model weights/plate_rec_color.pth --image_path imgs --output result
+
+# 视频测试demo 2.MP4 提取码：41aq
+# python detect_plate.py --detect_model weights/plate_detect.pt  --rec_model weights/plate_rec_color.pth --video 2.mp4
+# 视频文件为2.mp4 保存为result.mp4
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

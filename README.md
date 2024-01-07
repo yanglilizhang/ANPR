@@ -52,6 +52,7 @@ python anpr.py
    The result exists in the run folder.
 4. **Detection model onnx export**
    To export the detection model to onnx, onnx sim needs to be installed. **[onnx-simplifier](https://github.com/daquexian/onnx-simplifier)**
+   **检测模型导出onnx,需要安装onnx-sim onnx-simplifier**
 
    ```
    1. python export.py --weights ./weights/plate_detect.pt --img 640 --batch 1
