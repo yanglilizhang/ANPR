@@ -9,15 +9,15 @@ import cv2
 # 收集指定目录下所有文件的路径，并将这些文件路径存储在名为 allFileList 的列表中
 def allFilePath(rootPath, allFIleList):
     # listdir 获取当前目录及子目录的所有文件
-    fileList = os.listdir(rootPath)
+    fileList = os.listdir(rootPath) #获得文件下所有文件
     for temp in fileList:
         # os.path.join(rootPath, temp) 获取文件的完整路径 isfile 该路径是否是一个文件
         if os.path.isfile(os.path.join(rootPath, temp)):
             # 将该文件的完整路径添加list中
-            allFIleList.append(os.path.join(rootPath, temp))
+            allFIleList.append(os.path.join(rootPath, temp))  #如果是图片 则添加到allFIleList
         else:
             # 是子目录-递归调用
-            allFilePath(os.path.join(rootPath, temp), allFIleList)
+            allFilePath(os.path.join(rootPath, temp), allFIleList)  #如果是文件夹 接着调用allFilePath
 
 
 def xywh2yolo(rect, landmarks_sort, img):

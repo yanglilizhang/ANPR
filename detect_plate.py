@@ -34,7 +34,7 @@ def order_points(pts):                   #四个点按照左上 右上 右下 �
     return rect
 
 
-def four_point_transform(image, pts):                       #透视变换得到车牌小图
+def four_point_transform(image, pts):     #透视变换得到车牌小图
     rect = order_points(pts)
     (tl, tr, br, bl) = rect
     widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
@@ -48,7 +48,12 @@ def four_point_transform(image, pts):                       #透视变换得到�
         [maxWidth - 1, 0],
         [maxWidth - 1, maxHeight - 1],
         [0, maxHeight - 1]], dtype = "float32")
+    # 这段代码是用于计算透视变换矩阵的。具体来说，cv2.getPerspectiveTransform()函数接受两个参数：一个表示原始图像中的四个点（矩形区域），另一个表示目标图像中的四个点（通常是一个正方形）。
+    # 返回的值M是一个3x3的矩阵，表示从原始图像到目标图像的透视变换关系。这个矩阵可以用于将原始图像中的任意点转换为目标图像中的对应位置。
+    # 在YOLOv7模型中，这种透视变换通常用于将检测结果进行矫正，以便于在实际应用中更好地显示和使用。
     M = cv2.getPerspectiveTransform(rect, dst)
+    # 这段代码是用于执行透视变换的，即将原始图像根据给定的透视变换矩阵M转换为目标图像。
+    # 在这个过程中，image表示原始图像，而maxWidth和maxHeight则分别表示目标图像的宽度和高度。返回的值warped就是经过透视变换后的图像。
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     return warped
 
@@ -105,10 +110,10 @@ def get_plate_rec_landmark(img, xyxy, conf, landmarks, class_num,device,plate_re
     if class_label:        #判断是否是双层车牌，是双牌的话进行分割后然后拼接
         roi_img=get_split_merge(roi_img)
     if not is_color:
-        plate_number,rec_prob = get_plate_result(roi_img,device,plate_rec_model,is_color=is_color)                 #对车牌小图进行识别
+        plate_number,rec_prob = get_plate_result(roi_img,device,plate_rec_model,is_color=is_color)  #对车牌小图进行识别
     else:
         plate_number,rec_prob,plate_color,color_conf=get_plate_result(roi_img,device,plate_rec_model,is_color=is_color) 
-    for dan in danger:                                                           #只要出现‘危’或者‘险’就是危险品车牌
+    for dan in danger:   #只要出现‘危’或者‘险’就是危险品车牌
         if dan in plate_number:
             plate_number='危险品'
     # cv2.imwrite("roi.jpg",roi_img)
@@ -135,7 +140,7 @@ def detect_Recognition_plate(model, orgimg, device,plate_rec_model,img_size,is_c
     iou_thres = 0.5
     dict_list=[]
     # orgimg = cv2.imread(image_path)  # BGR
-    img0 = copy.deepcopy(orgimg)
+    img0 = copy.deepcopy(orgimg)   #原始图片
     assert orgimg is not None, 'Image Not Found ' 
     h0, w0 = orgimg.shape[:2]  # orig hw
     r = img_size / max(h0, w0)  # resize image to img_size
@@ -143,20 +148,20 @@ def detect_Recognition_plate(model, orgimg, device,plate_rec_model,img_size,is_c
         interp = cv2.INTER_AREA if r < 1  else cv2.INTER_LINEAR
         img0 = cv2.resize(img0, (int(w0 * r), int(h0 * r)), interpolation=interp)
 
-    imgsz = check_img_size(img_size, s=model.stride.max())  # check img_size
+    imgsz = check_img_size(img_size, s=model.stride.max())  # check img_size #检测模型输入的图片的尺寸[640, 640]
 
-    img = letterbox(img0, new_shape=imgsz)[0]
+    img = letterbox(img0, new_shape=imgsz)[0]  #将原始图片缩放到new_shape 具体代码详解见下
     # img =process_data(img0)
-    # Convert
+    # Convert  # BGR to RGB, to 3x640X640  # opencv读取的是bgr形式的 (h, w, 3)
     img = img[:, :, ::-1].transpose(2, 0, 1).copy()  # BGR to RGB, to 3x416x416
 
     # Run inference
     t0 = time.time()
 
-    img = torch.from_numpy(img).to(device)
-    img = img.float()  # uint8 to fp16/32
+    img = torch.from_numpy(img).to(device)  # 转化为tensor, 使用cuda
+    img = img.float()  # uint8 to fp16/32  uint8 to fp16/32   #unit8 -> img.half()=fp16 img.float()=fp32
     img /= 255.0  # 0 - 255 to 0.0 - 1.0
-    if img.ndimension() == 3:
+    if img.ndimension() == 3:   #如果是一张图片, 扩维[3, 640, 640] -> [1, 3, 640, 640]
         img = img.unsqueeze(0)
 
     # Inference
@@ -174,6 +179,7 @@ def detect_Recognition_plate(model, orgimg, device,plate_rec_model,img_size,is_c
     # Process detections
     for i, det in enumerate(pred):  # detections per image
         if len(det):
+            # 也就是将end_img 变回 orig_img
             # Rescale boxes from img_size to im0 size
             det[:, :4] = scale_coords(img.shape[2:], det[:, :4], orgimg.shape).round()
 
@@ -184,10 +190,10 @@ def detect_Recognition_plate(model, orgimg, device,plate_rec_model,img_size,is_c
             det[:, 5:13] = scale_coords_landmarks(img.shape[2:], det[:, 5:13], orgimg.shape).round()
 
             for j in range(det.size()[0]):
-                xyxy = det[j, :4].view(-1).tolist()
-                conf = det[j, 4].cpu().numpy()
+                xyxy = det[j, :4].view(-1).tolist()  # 车牌检测xyxy
+                conf = det[j, 4].cpu().numpy()       # 车牌置信度
                 landmarks = det[j, 5:13].view(-1).tolist()
-                class_num = det[j, 13].cpu().numpy()
+                class_num = det[j, 13].cpu().numpy()  # 单层还是双层的车牌
                 result_dict = get_plate_rec_landmark(orgimg, xyxy, conf, landmarks, class_num,device,plate_rec_model,is_color=is_color)
                 dict_list.append(result_dict)
     return dict_list
@@ -249,7 +255,7 @@ if __name__ == '__main__':
     parser.add_argument('--rec_model', type=str, default='weights/plate_rec_color.pth', help='model.pt path(s)')#车牌识别+颜色识别模型
     parser.add_argument('--is_color',type=bool,default=True,help='plate color')     #是否识别颜色
     parser.add_argument('--image_path', type=str, default='imgs/xue.jpg', help='source')
-    parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')
+    parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)') #检测模型输入的图片的尺寸[640, 640]
     parser.add_argument('--output', type=str, default='result1', help='source') 
     parser.add_argument('--video', type=str, default='', help='source')
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -262,7 +268,7 @@ if __name__ == '__main__':
         os.mkdir(save_path)
 
     detect_model = load_model(opt.detect_model, device)  #初始化检测模型
-    plate_rec_model=init_model(device,opt.rec_model,is_color=opt.is_color)      #初始化识别模型
+    plate_rec_model=init_model(device,opt.rec_model,is_color=opt.is_color)  #初始化识别模型
     #算参数量
     total = sum(p.numel() for p in detect_model.parameters())
     total_1 = sum(p.numel() for p in plate_rec_model.parameters())

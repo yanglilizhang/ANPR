@@ -16,7 +16,7 @@ python anpr.py
 
    This project uses open source datasets CCPD and CRPD.
 
-   The dataset label format is YOLO format：
+   The dataset label format is YOLO format：车牌识别的数据集格式 label x y w h 就跟目标检测一样 右侧的8个点分别是车牌的左上tl、右上tr、左下bl、右下br
 
    ```
    label x y w h  pt1x pt1y pt2x pt2y pt3x pt3y pt4x pt4y

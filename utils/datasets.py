@@ -777,6 +777,22 @@ def replicate(img, labels):
     return img, labels
 
 
+"""
+为了更好的理解该函数的意思 现设置几个变量方便阐述 可以结合下面的例子进行理解
+orig_img: 原始的输入图片 即img
+temp_img: orig_img经过resize后的图片
+end_img: 最终的输出图片
+pad_img: end_img - temp_img 即end_img中除了temp_img的边缘部分 使用color=(114, 114, 114)padding的部分
+
+调用letterBox() 输入的img shape为(485, 625, 3)
+当scaleup为True时 r可以大于1 r=min(640/485, 640/625)=1.024, new_unpad即temp_img为(640, 497) 可以看出是对的625*1.024=640
+经过resize后, temp_img为
+在进入auto if语句之前 dw, dh理论值为end_img-temp_img=(640-640, 640-497)
+当auto为True时 dw=0 dh=(640-497) mod 32 = 15
+在除以2后 dw=0, dh=7.5
+因此, 最终的end_img的shape为(512, 640, 3) 512=497+15 640=640+0 最终在图片的上方和下方有很浅的薄边
+原文链接：https://blog.csdn.net/shilichangtin/article/details/134984373
+"""
 def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scaleFill=False, scaleup=True):
     # Resize image to a 32-pixel-multiple rectangle https://github.com/ultralytics/yolov3/issues/232
     shape = img.shape[:2]  # current shape [height, width]
@@ -785,15 +801,22 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
 
     # Scale ratio (new / old)
     r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+    # 这个scaleup为True 代表图片的w h 都可以按照一个r的比例进行放大
+    # 如果scaleup为False r最大是1 也就是w, h最大的是w*1, h*1
     if not scaleup:  # only scale down, do not scale up (for better test mAP)
         r = min(r, 1.0)
 
     # Compute padding
     ratio = r, r  # width, height ratios
+    #new_unpad: 这个相当于temp_img 这个的大小就是temp_img的大小
     new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
+    #dw dh: 相当于pad_img 就是end_img - temp_img
     dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
+    # 如果是auto为True 代表的是最终的结果是在temp_img的基础上 添加一层padding 也就是pad_img 并且end_img的w, h会达到32的最小倍数
+    # 也就是使用这个dw dh 输出的图片不一定是完整的[640, 640]的shape 也可能是[352, 640]这样的shape
     if auto:  # minimum rectangle
         dw, dh = np.mod(dw, 64), np.mod(dh, 64)  # wh padding
+    # 如果scaleFill为True： 不进行填充 直接将orig_img resize到[640, 640], 也就是orig_img到end_img的过程中会有变形
     elif scaleFill:  # stretch
         dw, dh = 0.0, 0.0
         new_unpad = (new_shape[1], new_shape[0])
@@ -802,11 +825,16 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
     dw /= 2  # divide padding into 2 sides
     dh /= 2
 
+    # 将orig_img resize到temp_img
     if shape[::-1] != new_unpad:  # resize
         img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
+    # 上下左右各填充一dw dh的一半 这个dw dh在除以2之前只能是int
+    # 因此dw dh的小数位只能是0.5 或者 0, 当为0.5时top比bottom小1, left比right小1;当为0的时,都一样
     top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
     left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+    # 将temp_img填充padding到end_img
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
+    # 返回end_img ratio=r, r=min(end_img / orig_img) (dw, dh)左右上下填充的距离
     return img, ratio, (dw, dh)
 
 
