@@ -77,7 +77,9 @@ class Detect(nn.Module):
                 y = torch.cat([box_xy, box_wh, y[:, :, :, :, 4:5], landm1, landm2, landm3, landm4, y[:, :, :, :, 13:13+self.nc]], -1)
 
                 z.append(y.view(bs, -1, self.no))
-            return torch.cat(z, 1)
+
+            return (torch.cat(z, 1),x) #导出模型时三层输出,用ncnn_export.py
+            # return torch.cat(z, 1) #导出模型时单层输出,用export.py
         
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv

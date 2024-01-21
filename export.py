@@ -20,6 +20,10 @@ from utils.general import set_logging, check_img_size
 import onnx
 
 if __name__ == '__main__':
+    """
+        python export.py --weights ./weights/plate_detect-copy.pt --img 640 --batch 1
+        onnxsim weights/plate_detect-copy.onnx weights/plate_detect-copy.onnx --skip-shape-inference
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='./yolov5s.pt', help='weights path')  # from yolov5/models/
     parser.add_argument('--img_size', nargs='+', type=int, default=[640, 640], help='image size')  # height, width
