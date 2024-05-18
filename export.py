@@ -35,6 +35,8 @@ if __name__ == '__main__':
     parser.add_argument('--onnx2trt', action='store_true', default=False, help='export onnx to tensorrt')
     parser.add_argument('--fp16_trt', action='store_true', default=False, help='fp16 infer')
     #================================================================
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
