@@ -353,7 +353,8 @@ def ANPR_DetOcr(image_path,video):
                     r_str=r_str+str(result['rec_conf'].mean(axis=0))+'\nColor_conf: '
                     r_str=r_str+str(result['color_conf'])+'\n\n'
                 plate_no.configure(text=r_str)
-                print(r_str)
+                # print(r_str)
+                print(f"结果：{r_str}")
     else:    #处理视频
         video_name = video
         capture=cv2.VideoCapture(video_name)

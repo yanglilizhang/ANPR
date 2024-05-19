@@ -36,6 +36,7 @@ def get_plate_result(img,session_rec): #识别后处理
     y_onnx = session_rec.run([session_rec.get_outputs()[0].name], {session_rec.get_inputs()[0].name: img})[0]
     # print(y_onnx[0])
     index =np.argmax(y_onnx[0],axis=1)  #找出概率最大的那个字符的序号
+    # print(index)
     # print(y_onnx[0])
     plate_no = decodePlate(index)
     # plate_no = decodePlate(y_onnx[0])
@@ -219,8 +220,9 @@ if __name__ == "__main__":
     begin = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument('--detect_model',type=str, default=r'weights/plate_detect.onnx', help='model.pt path(s)')  #检测模型
-    parser.add_argument('--rec_model', type=str, default='weights/plate_rec.onnx', help='model.pt path(s)')#识别模型
-    parser.add_argument('--image_path', type=str, default='imgs', help='source') 
+    # parser.add_argument('--rec_model', type=str, default='weights/plate_rec.onnx', help='model.pt path(s)')#识别模型
+    parser.add_argument('--rec_model', type=str, default='weights/plate_rec_color.onnx', help='model.pt path(s)')#识别模型
+    parser.add_argument('--image_path', type=str, default='imgs', help='source')
     parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--output', type=str, default='result1', help='source') 
     opt = parser.parse_args()

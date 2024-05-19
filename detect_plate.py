@@ -252,8 +252,9 @@ def draw_result(orgimg, dict_list, is_color=False):  # 车牌结果画出来
 
         # numpy 标量
         detect_conf = np.array(detect_conf, dtype=np.float32)
-        rec_conf = np.array(rec_conf, dtype=np.float32)
+        # rec_conf = np.array(rec_conf, dtype=np.float32)
         # rec_conf = np.array([1, 1, 0.99995, 0.94048, 0.99903, 0.99994, 1], dtype=np.float32)
+        rec_conf = rec_conf.mean(axis=0)
 
         # 使用 item() 方法取出值
         detect_conf_value = detect_conf.item()
@@ -266,7 +267,7 @@ def draw_result(orgimg, dict_list, is_color=False):  # 车牌结果画出来
         rec_conf_list = rec_conf.tolist()
 
         print(
-            f"处理后-检测区域得分:{detect_conf_value}, 字符总概率->平均值: {average_conf:.4f},乘积: {product_conf:.4f}, 每个字符的概率:{rec_conf_list}")
+            f"处理后-检测区域得分:{detect_conf_value},rec_conf:{rec_conf} 字符总概率->平均值: {average_conf:.8f},乘积: {product_conf:.4f}, 每个字符的概率:{rec_conf_list}")
         # + "置信度：" + average_conf
         if result['plate_type'] == 0:  # 单层
             result_p += " " + result['plate_color'] + "," + str(average_conf)
@@ -317,7 +318,7 @@ if __name__ == '__main__':
     parser.add_argument('--is_color', type=bool, default=True, help='plate color')  # 是否识别颜色
     # parser.add_argument('--image_path', type=str, default='imgs/xue.jpg', help='source')
     # parser.add_argument('--image_path', type=str, default='imgs', help='source')
-    parser.add_argument('--image_path', type=str, default='/Users/zhangwei/Downloads/202312/20231205/330824000/',
+    parser.add_argument('--image_path', type=str, default='/Users//Downloads/202312/20231205/330824000/',
                         help='source')
     parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')  # 检测模型输入的图片的尺寸[640, 640]
     # parser.add_argument('--output', type=str, default='result1', help='source')
