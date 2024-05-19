@@ -88,6 +88,7 @@ def plate_color_rec(img, model, device):
 # .表示当前目录
 # ..表示上级目录
 
+# 测试车牌颜色检测模型
 if __name__ == '__main__':
     # 定义类别名称
     class_name = ['black', 'blue', 'danger', 'green', 'white', 'yellow']

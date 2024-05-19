@@ -317,9 +317,9 @@ if __name__ == '__main__':
                         help='model.pt path(s)')  # 车牌识别+颜色识别模型
     parser.add_argument('--is_color', type=bool, default=True, help='plate color')  # 是否识别颜色
     # parser.add_argument('--image_path', type=str, default='imgs/xue.jpg', help='source')
-    # parser.add_argument('--image_path', type=str, default='imgs', help='source')
-    parser.add_argument('--image_path', type=str, default='/Users//Downloads/202312/20231205/330824000/',
-                        help='source')
+    parser.add_argument('--image_path', type=str, default='imgs', help='source')
+    # parser.add_argument('--image_path', type=str, default='/Users//Downloads/202312/20231205/330824000/',
+    #                     help='source')
     parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')  # 检测模型输入的图片的尺寸[640, 640]
     # parser.add_argument('--output', type=str, default='result1', help='source')
     parser.add_argument('--output', type=str, default='result2', help='source')

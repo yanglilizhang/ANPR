@@ -156,14 +156,17 @@ def init_model(device, model_path, is_color=False):
 
 # model = init_model(device)
 if __name__ == '__main__':
-    model_path = r"weights/plate_rec_color.pth"
-    image_path = "images/tmp2424.png"
-    testPath = r"/mnt/Gpan/Mydata/pytorchPorject/CRNN/crnn_plate_recognition/images"
+    model_path = r"../weights/plate_rec_color.pth"
+    # image_path = "images/tmp2424.png"
+    image_path = "../imgs/tmp2424.png"
+    # testPath = r"/mnt/Gpan/Mydata/pytorchPorject/CRNN/crnn_plate_recognition/images"
+    testPath = "../imgs"
     fileList = []
     allFilePath(testPath, fileList)
     #    result = get_plate_result(image_path,device)
     #    print(result)
-    is_color = False
+    # is_color = False
+    is_color = True
     model = init_model(device, model_path, is_color=is_color)
     right = 0
     begin = time.time()
@@ -171,8 +174,12 @@ if __name__ == '__main__':
     for imge_path in fileList:
         img = cv2.imread(imge_path)
         if is_color:
-            plate, _, plate_color, _ = get_plate_result(img, device, model, is_color=is_color)
-            print(plate)
+            # plate, _, plate_color, _ = get_plate_result(img, device, model, is_color=is_color)
+            plate, prob, plate_color, _ = get_plate_result(img, device, model, is_color=is_color)
+            print(f"识别结果：车牌：{plate},置信度：{prob},车牌颜色：{plate_color},颜色置信度：{_}")
+            # print(prob)
         else:
-            plate, _ = get_plate_result(img, device, model, is_color=is_color)
-            print(plate, imge_path)
+            # plate, _ = get_plate_result(img, device, model, is_color=is_color)
+            plate, prob = get_plate_result(img, device, model, is_color=is_color)
+            print(f"识别结果：车牌：{plate},置信度：{prob}")
+            # print(plate, imge_path)
