@@ -149,13 +149,17 @@ def get_plate_rec_landmark(img, xyxy, conf, landmarks, class_num, device, plate_
     result_dict['product_conf'] = product_conf
 
     # 保存车牌小图
-    save_path = "roi_img"
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-    # img_name = f"{plate_number}_{conf:.2f}.jpg"
-    img_name = f"{plate_number}_{average_conf:.3f}.jpg"
-    img_path = os.path.join(save_path, img_name)
-    cv2.imwrite(img_path, roi_img)
+    # average_conf 大于0.999以上，则保存
+    if average_conf > 0.996:
+        # save_path = "roi_img"
+        save_path = "/Volumes/Samsung USB/small/202312small5"
+        # save_path = "/Volumes/Samsung USB/small/202312small"
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        # img_name = f"{plate_number}_{conf:.2f}.jpg"
+        img_name = f"{plate_number}_{average_conf:.3f}.jpg"
+        img_path = os.path.join(save_path, img_name)
+        cv2.imwrite(img_path, roi_img)
     return result_dict
 
 
@@ -317,12 +321,14 @@ if __name__ == '__main__':
                         help='model.pt path(s)')  # 车牌识别+颜色识别模型
     parser.add_argument('--is_color', type=bool, default=True, help='plate color')  # 是否识别颜色
     # parser.add_argument('--image_path', type=str, default='imgs/xue.jpg', help='source')
-    parser.add_argument('--image_path', type=str, default='imgs', help='source')
+    # parser.add_argument('--image_path', type=str, default='imgs', help='source')
+    parser.add_argument('--image_path', type=str, default='/Volumes/Samsung USB/202312-copy2', help='source')
     # parser.add_argument('--image_path', type=str, default='/Users//Downloads/202312/20231205/330824000/',
     #                     help='source')
     parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')  # 检测模型输入的图片的尺寸[640, 640]
     # parser.add_argument('--output', type=str, default='result1', help='source')
-    parser.add_argument('--output', type=str, default='result2', help='source')
+    parser.add_argument('--output', type=str, default='result4', help='source')
+    # parser.add_argument('--output', type=str, default='/Volumes/Samsung USB//small/202312small', help='source')
     parser.add_argument('--video', type=str, default='', help='source')
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device =torch.device("cpu")
