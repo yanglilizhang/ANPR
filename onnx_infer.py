@@ -222,9 +222,9 @@ if __name__ == "__main__":
     parser.add_argument('--detect_model',type=str, default=r'weights/plate_detect.onnx', help='model.pt path(s)')  #检测模型
     # parser.add_argument('--rec_model', type=str, default='weights/plate_rec.onnx', help='model.pt path(s)')#识别模型
     parser.add_argument('--rec_model', type=str, default='weights/plate_rec_color.onnx', help='model.pt path(s)')#识别模型
-    parser.add_argument('--image_path', type=str, default='imgs', help='source')
+    parser.add_argument('--image_path', type=str, default='imgs3', help='source')
     parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--output', type=str, default='result1', help='source') 
+    parser.add_argument('--output', type=str, default='result3', help='source')
     opt = parser.parse_args()
     file_list = []
     allFilePath(opt.image_path,file_list)
