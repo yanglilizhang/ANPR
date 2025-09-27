@@ -99,7 +99,8 @@ if __name__ == "__main__":
     # 用于存储图片文件的路径
     pic_file_list = []
     # 指定图片文件的路径
-    pic_file = r"/mnt/Gpan/Mydata/pytorchPorject/datasets/ccpd/train_bisai/train_bisai"
+    # pic_file = r"/mnt/Gpan/Mydata/pytorchPorject/datasets/ccpd/train_bisai/train_bisai"
+    pic_file = r"imgs3_result"
     # 指定保存小图片的目录路径
     save_small_path = "small"
     # 定义一个标签列表，与实际标注中的标签对应

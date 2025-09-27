@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片标注查看器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 2rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.95);
+            margin: 2rem;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .upload-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+        }
+
+        .upload-zone:hover {
+            border-color: #764ba2;
+            background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            transform: translateY(-2px);
+        }
+
+        .upload-zone.dragover {
+            border-color: #50c878;
+            background: linear-gradient(45deg, rgba(80, 200, 120, 0.1), rgba(102, 126, 234, 0.1));
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .viewer-section {
+            flex: 1;
+            display: none;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            margin: 0 2rem 2rem 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .control-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .image-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-image {
+            max-width: 100%;
+            max-height: 80vh;
+            cursor: crosshair;
+            border-radius: 10px;
+        }
+
+        .annotation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            border-radius: 10px;
+        }
+
+        .point-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #ff4757;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: move;
+            pointer-events: all;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .point-handle:hover {
+            background: #ff3742;
+            transform: translate(-50%, -50%) scale(1.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .point-handle.active {
+            background: #2ed573;
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+
+        .file-info {
+            color: white;
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        .save-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .save-status.saved {
+            background: rgba(46, 213, 115, 0.2);
+            color: #2ed573;
+        }
+
+        .save-status.unsaved {
+            background: rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+        }
+
+        .label-info {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.2rem;
+            margin: 2rem 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 图片标注查看器</h1>
+        <p>上传包含图片和标注文件的文件夹，查看和编辑标注</p>
+        <div id="browserSupport" style="background: rgba(255, 87, 87, 0.2); padding: 0.8rem; border-radius: 10px; margin-top: 1rem; font-size: 0.9rem;">
+            <strong>⚠️ 浏览器兼容性检测中...</strong>
+        </div>
+    </div>
+
+    <div class="upload-section" id="uploadSection">
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">📁</div>
+            <h3>选择或拖放文件夹</h3>
+            <p>请选择包含图片文件(.jpg, .png, .jpeg)和对应标注文件(.json)的文件夹</p>
+            <input type="file" id="folderInput" webkitdirectory multiple style="display: none;">
+            <button class="btn upload-btn" style="margin-top: 1rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                选择文件夹
+            </button>
+        </div>
+    </div>
+
+    <div class="viewer-section" id="viewerSection">
+        <div class="controls">
+            <div class="nav-buttons">
+                <button class="btn" id="prevBtn" onclick="previousImage()">⬅ 上一张</button>
+                <button class="btn" id="nextBtn" onclick="nextImage()">下一张 ➡</button>
+            </div>
+            <div class="control-right">
+                <div class="file-info" id="fileInfo">0 / 0</div>
+                <button class="btn" id="exportAllBtn" onclick="exportAllModified()" style="background: rgba(46, 213, 115, 0.3);">
+                    📦 批量导出全部
+                </button>
+                <div class="save-status saved" id="saveStatus">未修改 (0)</div>
+            </div>
+        </div>
+
+        <div class="image-container" id="imageContainer">
+            <img id="mainImage" class="main-image" alt="标注图片">
+            <canvas id="annotationCanvas" class="annotation-canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        class AnnotationViewer {
+            constructor() {
+                this.files = [];
+                this.imageFiles = [];
+                this.annotationFiles = new Map();
+                this.fileHandles = new Map(); // 存储文件句柄，用于直接写入
+                this.modifiedAnnotations = new Map(); // 存储所有修改过的标注数据
+                this.currentIndex = 0;
+                this.currentAnnotation = null;
+                this.isDragging = false;
+                this.dragPointIndex = -1;
+                this.dragShapeIndex = -1;
+                this.hasUnsavedChanges = false;
+                this.supportsFileSystemAccess = 'showDirectoryPicker' in window;
+
+                this.initEventListeners();
+                this.checkBrowserSupport();
+            }
+
+            checkBrowserSupport() {
+                const supportDiv = document.getElementById('browserSupport');
+                if (this.supportsFileSystemAccess) {
+                    supportDiv.innerHTML = `
+                        <strong>✅ 浏览器支持实时保存</strong> - 修改标注点将直接保存到原始JSON文件中！
+                        <br><small>支持的浏览器：Chrome 86+, Edge 86+</small>
+                    `;
+                    supportDiv.style.background = 'rgba(46, 213, 115, 0.2)';
+                } else {
+                    supportDiv.innerHTML = `
+                        <strong>⚠️ 浏览器不支持直接文件保存</strong> - 将使用批量导出模式
+                        <br><small>请使用 Chrome 86+ 或 Edge 86+ 获得最佳体验</small>
+                    `;
+                }
+            }
+
+            initEventListeners() {
+                const uploadZone = document.getElementById('uploadZone');
+                const folderInput = document.getElementById('folderInput');
+
+                // 文件上传事件 - 只绑定到按钮，不绑定到整个区域
+                uploadZone.querySelector('.btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (this.supportsFileSystemAccess) {
+                        this.selectDirectoryWithFileSystem();
+                    } else {
+                        folderInput.click();
+                    }
+                });
+
+                uploadZone.addEventListener('dragover', this.handleDragOver.bind(this));
+                uploadZone.addEventListener('drop', this.handleDrop.bind(this));
+                uploadZone.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                folderInput.addEventListener('change', this.handleFileSelect.bind(this));
+
+                // 图片加载事件
+                document.getElementById('mainImage').addEventListener('load', this.onImageLoad.bind(this));
+
+                // 鼠标事件
+                document.addEventListener('mousedown', this.onMouseDown.bind(this));
+                document.addEventListener('mousemove', this.onMouseMove.bind(this));
+                document.addEventListener('mouseup', this.onMouseUp.bind(this));
+
+                // 键盘事件
+                document.addEventListener('keydown', this.onKeyDown.bind(this));
+            }
+
+            async selectDirectoryWithFileSystem() {
+                try {
+                    const directoryHandle = await window.showDirectoryPicker({
+                        mode: 'readwrite'
+                    });
+
+                    await this.processDirectoryHandle(directoryHandle);
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('选择文件夹失败:', error);
+                        alert('选择文件夹失败，请重试');
+                    }
+                }
+            }
+
+            async processDirectoryHandle(directoryHandle) {
+                const files = [];
+                this.fileHandles.clear();
+
+                for await (const [name, handle] of directoryHandle.entries()) {
+                    if (handle.kind === 'file') {
+                        const file = await handle.getFile();
+                        files.push(file);
+
+                        // 存储JSON文件的句柄用于后续写入
+                        if (name.toLowerCase().endsWith('.json')) {
+                            const baseName = name.replace(/\.json$/i, '');
+                            this.fileHandles.set(baseName, handle);
+                        }
+                    }
+                }
+
+                this.processFiles(files);
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                document.getElementById('uploadZone').classList.add('dragover');
+            }
+
+            handleDragLeave() {
+                document.getElementById('uploadZone').classList.remove('dragover');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                document.getElementById('uploadZone').classList.remove('dragover');
+                const items = e.dataTransfer.items;
+                if (items.length > 0) {
+                    this.processDroppedFiles(items);
+                }
+            }
+
+            async processDroppedFiles(items) {
+                const files = [];
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.kind === 'file') {
+                        const entry = item.webkitGetAsEntry();
+                        if (entry.isDirectory) {
+                            await this.readDirectory(entry, files);
+                        }
+                    }
+                }
+                if (files.length > 0) {
+                    this.processFiles(files);
+                }
+            }
+
+            readDirectory(directory, files) {
+                return new Promise((resolve) => {
+                    const reader = directory.createReader();
+                    reader.readEntries(async (entries) => {
+                        for (const entry of entries) {
+                            if (entry.isFile) {
+                                const file = await this.getFileFromEntry(entry);
+                                files.push(file);
+                            } else if (entry.isDirectory) {
+                                await this.readDirectory(entry, files);
+                            }
+                        }
+                        resolve();
+                    });
+                });
+            }
+
+            getFileFromEntry(entry) {
+                return new Promise((resolve) => {
+                    entry.file(resolve);
+                });
+            }
+
+            handleFileSelect(e) {
+                this.processFiles(Array.from(e.target.files));
+            }
+
+            processFiles(files) {
+                this.files = files;
+                this.imageFiles = [];
+                this.annotationFiles.clear();
+
+                // 分离图片文件和标注文件
+                files.forEach(file => {
+                    const extension = file.name.toLowerCase().split('.').pop();
+                    if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(extension)) {
+                        this.imageFiles.push(file);
+                    } else if (extension === 'json') {
+                        const baseName = file.name.replace(/\.json$/, '');
+                        this.annotationFiles.set(baseName, file);
+                    }
+                });
+
+                // 只保留有对应标注文件的图片
+                this.imageFiles = this.imageFiles.filter(imageFile => {
+                    const baseName = imageFile.name.replace(/\.[^/.]+$/, '');
+                    return this.annotationFiles.has(baseName);
+                });
+
+                if (this.imageFiles.length === 0) {
+                    alert('未找到匹配的图片和标注文件对。请确保图片文件和标注文件的基础名称相同，标注文件为.json格式。');
+                    return;
+                }
+
+                this.currentIndex = 0;
+                this.showViewer();
+                this.loadCurrentImage();
+            }
+
+            showViewer() {
+                document.getElementById('uploadSection').style.display = 'none';
+                document.getElementById('viewerSection').style.display = 'block';
+            }
+
+            async loadCurrentImage() {
+                if (this.imageFiles.length === 0) return;
+
+                const imageFile = this.imageFiles[this.currentIndex];
+                const baseName = imageFile.name.replace(/\.[^/.]+$/, '');
+                const annotationFile = this.annotationFiles.get(baseName);
+
+                console.log('Loading image:', imageFile.name);
+                console.log('Base name:', baseName);
+                console.log('Annotation file:', annotationFile ? annotationFile.name : 'none');
+
+                // 更新文件信息
+                const annotationFileName = annotationFile ? annotationFile.name : '无标注文件';
+                document.getElementById('fileInfo').textContent =
+                    `${this.currentIndex + 1} / ${this.imageFiles.length} - ${imageFile.name}(${annotationFileName})`;
+
+                // 更新导航按钮状态
+                document.getElementById('prevBtn').disabled = this.currentIndex === 0;
+                document.getElementById('nextBtn').disabled = this.currentIndex === this.imageFiles.length - 1;
+
+                // 先加载标注文件
+                if (annotationFile) {
+                    try {
+                        const annotationText = await annotationFile.text();
+                        this.currentAnnotation = JSON.parse(annotationText);
+                        console.log('Loaded annotation:', this.currentAnnotation);
+                    } catch (error) {
+                        console.error('Error parsing annotation file:', error);
+                        this.currentAnnotation = { shapes: [] };
+                    }
+                } else {
+                    this.currentAnnotation = { shapes: [] };
+                }
+
+                // 清理之前的URL
+                const mainImage = document.getElementById('mainImage');
+                if (mainImage.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(mainImage.src);
+                }
+
+                // 加载图片
+                const imageUrl = URL.createObjectURL(imageFile);
+                mainImage.src = imageUrl;
+
+                this.hasUnsavedChanges = false;
+                this.updateSaveStatus();
+            }
+
+            onImageLoad() {
+                console.log('Image loaded, setting up canvas and drawing annotations');
+                console.log('Current annotation:', this.currentAnnotation);
+                this.setupCanvas();
+                // 添加小延迟确保DOM更新完成
+                setTimeout(() => {
+                    this.drawAnnotations();
+                }, 10);
+            }
+
+            setupCanvas() {
+                const image = document.getElementById('mainImage');
+                const canvas = document.getElementById('annotationCanvas');
+                const container = document.getElementById('imageContainer');
+
+                const imageRect = image.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+
+                canvas.width = image.clientWidth;
+                canvas.height = image.clientHeight;
+                canvas.style.width = image.clientWidth + 'px';
+                canvas.style.height = image.clientHeight + 'px';
+                canvas.style.left = (imageRect.left - containerRect.left) + 'px';
+                canvas.style.top = (imageRect.top - containerRect.top) + 'px';
+            }
+
+            drawAnnotations() {
+                console.log('Drawing annotations...');
+                const canvas = document.getElementById('annotationCanvas');
+                const ctx = canvas.getContext('2d');
+                const image = document.getElementById('mainImage');
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // 清除现有的控制点
+                document.querySelectorAll('.point-handle, .label-info').forEach(el => el.remove());
+
+                if (!this.currentAnnotation || !this.currentAnnotation.shapes || this.currentAnnotation.shapes.length === 0) {
+                    console.log('No annotation data to draw');
+                    return;
+                }
+
+                console.log('Drawing', this.currentAnnotation.shapes.length, 'shapes');
+                console.log('Image dimensions - displayed:', image.clientWidth, 'x', image.clientHeight,
+                           'original:', this.currentAnnotation.imageWidth, 'x', this.currentAnnotation.imageHeight);
+
+                const scaleX = image.clientWidth / (this.currentAnnotation.imageWidth || image.naturalWidth);
+                const scaleY = image.clientHeight / (this.currentAnnotation.imageHeight || image.naturalHeight);
+
+                console.log('Scale factors:', scaleX, scaleY);
+
+                this.currentAnnotation.shapes.forEach((shape, shapeIndex) => {
+                    console.log('Drawing shape', shapeIndex, ':', shape);
+                    if (shape.shape_type === 'polygon' && shape.points && shape.points.length > 0) {
+                        // 绘制多边形
+                        ctx.strokeStyle = '#ff4757';
+                        ctx.fillStyle = 'rgba(255, 71, 87, 0.1)';
+                        ctx.lineWidth = 2;
+
+                        ctx.beginPath();
+                        shape.points.forEach((point, pointIndex) => {
+                            const x = point[0] * scaleX;
+                            const y = point[1] * scaleY;
+                            console.log(`Point ${pointIndex}: (${point[0]}, ${point[1]}) -> (${x}, ${y})`);
+                            if (pointIndex === 0) {
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
+                        });
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+
+                        // 创建控制点
+                        shape.points.forEach((point, pointIndex) => {
+                            this.createPointHandle(
+                                point[0] * scaleX,
+                                point[1] * scaleY,
+                                shapeIndex,
+                                pointIndex
+                            );
+                        });
+
+                        // 创建标签
+                        if (shape.label) {
+                            const centerX = shape.points.reduce((sum, p) => sum + p[0] * scaleX, 0) / shape.points.length;
+                            const centerY = shape.points.reduce((sum, p) => sum + p[1] * scaleY, 0) / shape.points.length;
+                            this.createLabel(centerX, centerY, shape.label);
+                        }
+                    }
+                });
+            }
+
+            createPointHandle(x, y, shapeIndex, pointIndex) {
+                const handle = document.createElement('div');
+                handle.className = 'point-handle';
+                handle.style.left = x + 'px';
+                handle.style.top = y + 'px';
+                handle.dataset.shapeIndex = shapeIndex;
+                handle.dataset.pointIndex = pointIndex;
+
+                const container = document.getElementById('imageContainer');
+                const canvas = document.getElementById('annotationCanvas');
+                const canvasRect = canvas.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+
+                handle.style.left = (x + canvasRect.left - containerRect.left) + 'px';
+                handle.style.top = (y + canvasRect.top - containerRect.top) + 'px';
+
+                container.appendChild(handle);
+            }
+
+            createLabel(x, y, label) {
+                const labelEl = document.createElement('div');
+                labelEl.className = 'label-info';
+                labelEl.textContent = `标签: ${label}`;
+
+                const container = document.getElementById('imageContainer');
+                const canvas = document.getElementById('annotationCanvas');
+                const canvasRect = canvas.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+
+                labelEl.style.left = (x + canvasRect.left - containerRect.left - 30) + 'px';
+                labelEl.style.top = (y + canvasRect.top - containerRect.top - 30) + 'px';
+
+                container.appendChild(labelEl);
+            }
+
+            onMouseDown(e) {
+                if (e.target.classList.contains('point-handle')) {
+                    this.isDragging = true;
+                    this.dragShapeIndex = parseInt(e.target.dataset.shapeIndex);
+                    this.dragPointIndex = parseInt(e.target.dataset.pointIndex);
+                    e.target.classList.add('active');
+                    e.preventDefault();
+                }
+            }
+
+            onMouseMove(e) {
+                if (this.isDragging) {
+                    const canvas = document.getElementById('annotationCanvas');
+                    const image = document.getElementById('mainImage');
+                    const canvasRect = canvas.getBoundingClientRect();
+
+                    const x = e.clientX - canvasRect.left;
+                    const y = e.clientY - canvasRect.top;
+
+                    // 更新标注数据，确保数据格式正确
+                    const scaleX = this.currentAnnotation.imageWidth / image.clientWidth;
+                    const scaleY = this.currentAnnotation.imageHeight / image.clientHeight;
+
+                    // 转换坐标并保留一位小数，确保格式为 xxx.0
+                    const originalX = parseFloat((x * scaleX).toFixed(1));
+                    const originalY = parseFloat((y * scaleY).toFixed(1));
+
+                    this.currentAnnotation.shapes[this.dragShapeIndex].points[this.dragPointIndex][0] = originalX;
+                    this.currentAnnotation.shapes[this.dragShapeIndex].points[this.dragPointIndex][1] = originalY;
+
+                    console.log(`坐标更新: (${x.toFixed(1)}, ${y.toFixed(1)}) -> (${originalX}, ${originalY})`);
+
+                    // 保存到修改记录中
+                    const imageFile = this.imageFiles[this.currentIndex];
+                    const baseName = imageFile.name.replace(/\.[^/.]+$/, '');
+                    this.modifiedAnnotations.set(baseName, JSON.parse(JSON.stringify(this.currentAnnotation)));
+
+                    this.hasUnsavedChanges = true;
+                    this.updateSaveStatus();
+                    this.drawAnnotations();
+                }
+            }
+
+            async onMouseUp(e) {
+                if (this.isDragging) {
+                    this.isDragging = false;
+                    document.querySelectorAll('.point-handle.active').forEach(el => {
+                        el.classList.remove('active');
+                    });
+
+                    // 获取当前文件信息
+                    const imageFile = this.imageFiles[this.currentIndex];
+                    const baseName = imageFile.name.replace(/\.[^/.]+$/, '');
+
+                    // 保存到修改记录中
+                    this.modifiedAnnotations.set(baseName, JSON.parse(JSON.stringify(this.currentAnnotation)));
+
+                    // 如果支持文件系统API，直接保存到原始文件
+                    if (this.supportsFileSystemAccess && this.fileHandles.has(baseName)) {
+                        await this.saveToOriginalFile(baseName);
+                    }
+
+                    this.updateSaveStatus();
+                    console.log(`标注点已更新并保存 - ${baseName}`);
+                }
+            }
+
+            async saveToOriginalFile(baseName) {
+                try {
+                    const fileHandle = this.fileHandles.get(baseName);
+                    if (!fileHandle) {
+                        console.warn(`没有找到 ${baseName} 的文件句柄`);
+                        return;
+                    }
+
+                    const annotation = this.modifiedAnnotations.get(baseName);
+                    if (!annotation) return;
+
+                    // 更新图片路径
+                    const imageFile = this.imageFiles.find(file =>
+                        file.name.replace(/\.[^/.]+$/, '') === baseName
+                    );
+                    if (imageFile) {
+                        annotation.imagePath = imageFile.name;
+                    }
+
+                    // 确保所有坐标值格式正确 (保留1位小数)
+                    if (annotation.shapes) {
+                        annotation.shapes.forEach(shape => {
+                            if (shape.points && Array.isArray(shape.points)) {
+                                shape.points = shape.points.map(point => {
+                                    if (Array.isArray(point) && point.length >= 2) {
+                                        return [
+                                            parseFloat(point[0].toFixed(1)),
+                                            parseFloat(point[1].toFixed(1))
+                                        ];
+                                    }
+                                    return point;
+                                });
+                            }
+                        });
+                    }
+
+                    // 创建可写流并写入文件
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(JSON.stringify(annotation, null, 2));
+                    await writable.close();
+
+                    // 从修改记录中移除（因为已经保存到原始文件）
+                    this.modifiedAnnotations.delete(baseName);
+
+                    console.log(`✅ 已直接保存到原始文件: ${baseName}.json`);
+                    console.log('保存的坐标格式:', annotation.shapes[0]?.points);
+
+                } catch (error) {
+                    console.error(`保存到原始文件失败 (${baseName}):`, error);
+                    // 保存失败时保留在修改记录中
+                }
+            }
+
+            onKeyDown(e) {
+                if (e.key === 'ArrowLeft') {
+                    this.previousImage();
+                } else if (e.key === 'ArrowRight') {
+                    this.nextImage();
+                } else if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    this.exportAllModified();
+                }
+            }
+
+            previousImage() {
+                if (this.currentIndex > 0) {
+                    this.currentIndex--;
+                    this.loadCurrentImage();
+                }
+            }
+
+            nextImage() {
+                if (this.currentIndex < this.imageFiles.length - 1) {
+                    this.currentIndex++;
+                    this.loadCurrentImage();
+                }
+            }
+
+            async exportAllModified() {
+                if (this.modifiedAnnotations.size === 0) {
+                    alert('没有修改过的标注文件需要导出');
+                    return;
+                }
+
+                try {
+                    // 创建ZIP文件的内容
+                    const files = [];
+
+                    for (const [baseName, annotation] of this.modifiedAnnotations.entries()) {
+                        // 更新图片路径信息
+                        const imageFile = this.imageFiles.find(file =>
+                            file.name.replace(/\.[^/.]+$/, '') === baseName
+                        );
+                        if (imageFile) {
+                            annotation.imagePath = imageFile.name;
+                        }
+
+                        // 确保所有坐标值格式正确 (保留1位小数)
+                        if (annotation.shapes) {
+                            annotation.shapes.forEach(shape => {
+                                if (shape.points && Array.isArray(shape.points)) {
+                                    shape.points = shape.points.map(point => {
+                                        if (Array.isArray(point) && point.length >= 2) {
+                                            return [
+                                                parseFloat(point[0].toFixed(1)),
+                                                parseFloat(point[1].toFixed(1))
+                                            ];
+                                        }
+                                        return point;
+                                    });
+                                }
+                            });
+                        }
+
+                        const jsonContent = JSON.stringify(annotation, null, 2);
+                        files.push({
+                            name: `${baseName}.json`,
+                            content: jsonContent
+                        });
+                    }
+
+                    // 如果只有一个文件，直接下载
+                    if (files.length === 1) {
+                        const blob = new Blob([files[0].content], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = files[0].name;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    } else {
+                        // 多个文件时，创建一个包含所有文件的文本文件
+                        let allContent = `共导出 ${files.length} 个修改过的标注文件：\n\n`;
+                        allContent += '='.repeat(50) + '\n\n';
+
+                        files.forEach((file, index) => {
+                            allContent += `文件 ${index + 1}: ${file.name}\n`;
+                            allContent += '-'.repeat(30) + '\n';
+                            allContent += file.content + '\n\n';
+                            allContent += '='.repeat(50) + '\n\n';
+                        });
+
+                        const blob = new Blob([allContent], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `修改的标注文件_${new Date().toISOString().slice(0,10)}.txt`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }
+
+                    // 清空修改记录
+                    this.modifiedAnnotations.clear();
+                    this.hasUnsavedChanges = false;
+                    this.updateSaveStatus();
+
+                    console.log(`已导出 ${files.length} 个修改过的标注文件`);
+                    alert(`成功导出 ${files.length} 个修改过的标注文件！`);
+
+                } catch (error) {
+                    console.error('批量导出失败:', error);
+                    alert('批量导出失败，请重试');
+                }
+            }
+
+            updateSaveStatus() {
+                const status = document.getElementById('saveStatus');
+                const modifiedCount = this.modifiedAnnotations.size;
+                const currentImageFile = this.imageFiles[this.currentIndex];
+                const currentBaseName = currentImageFile ? currentImageFile.name.replace(/\.[^/.]+$/, '') : '';
+                const isCurrentModified = this.modifiedAnnotations.has(currentBaseName);
+
+                if (this.supportsFileSystemAccess) {
+                    // 文件系统API模式 - 修改会直接保存
+                    if (modifiedCount > 0) {
+                        const currentStatus = isCurrentModified ? '●' : '○';
+                        status.textContent = `${currentStatus} 待保存 (${modifiedCount})`;
+                        status.className = 'save-status unsaved';
+                    } else {
+                        status.textContent = '实时保存 ✅';
+                        status.className = 'save-status saved';
+                    }
+                } else {
+                    // 传统模式 - 需要手动导出
+                    if (modifiedCount > 0) {
+                        const currentStatus = isCurrentModified ? '●' : '○';
+                        status.textContent = `${currentStatus} 已修改 (${modifiedCount})`;
+                        status.className = 'save-status unsaved';
+                    } else {
+                        status.textContent = '未修改 (0)';
+                        status.className = 'save-status saved';
+                    }
+                }
+            }
+
+            // 保持向后兼容
+            async saveCurrentAnnotation() {
+                return this.exportAllModified();
+            }
+
+            async exportCurrentAnnotation() {
+                return this.exportAllModified();
+            }
+        }
+
+        // 初始化应用
+        const app = new AnnotationViewer();
+
+        // 全局函数
+        function previousImage() {
+            app.previousImage();
+        }
+
+        function nextImage() {
+            app.nextImage();
+        }
+
+        function exportAllModified() {
+            app.exportAllModified();
+        }
+    </script>
+</body>
+</html>

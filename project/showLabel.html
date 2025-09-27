@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>YOLO 标注可视化</title>
+  <style>
+    body { font-family: sans-serif; }
+    #preview { display: flex; flex-wrap: wrap; gap: 20px; }
+    .canvas-container { border: 1px solid #ccc; padding: 5px; }
+    canvas { max-width: 400px; }
+  </style>
+</head>
+<body>
+  <h2>YOLO 标注可视化 (纯前端)</h2>
+  <input type="file" id="folderInput" webkitdirectory directory multiple />
+  <div id="preview"></div>
+
+  <script>
+    const folderInput = document.getElementById('folderInput');
+    const preview = document.getElementById('preview');
+
+    folderInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+
+      // 按文件名分组（图片和txt对应）
+      const imgFiles = files.filter(f => /\.(jpg|jpeg|png)$/i.test(f.name));
+      const txtFiles = files.filter(f => /\.txt$/i.test(f.name));
+
+      const txtMap = {};
+      for (const txt of txtFiles) {
+        txtMap[txt.name.replace(/\..+$/, '')] = txt;
+      }
+
+      for (const imgFile of imgFiles) {
+        const name = imgFile.name.replace(/\..+$/, '');
+        const txtFile = txtMap[name];
+        if (!txtFile) continue;
+
+        const img = await loadImage(URL.createObjectURL(imgFile));
+        const annotations = await parseTxt(txtFile);
+
+        // 创建 canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        // 绘制标注
+        annotations.forEach(ann => {
+          drawAnnotation(ctx, ann, img.width, img.height);
+        });
+
+        // 添加到页面
+        const container = document.createElement('div');
+        container.className = 'canvas-container';
+        container.appendChild(canvas);
+        preview.appendChild(container);
+      }
+    });
+
+    function loadImage(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = src;
+      });
+    }
+
+    async function parseTxt(file) {
+      const text = await file.text();
+      const lines = text.trim().split("\n");
+      return lines.map(line => {
+        const parts = line.trim().split(/\s+/).map(Number);
+        return {
+          label: parts[0],
+          x: parts[1], y: parts[2], w: parts[3], h: parts[4],
+          pts: parts.slice(5, 13)
+        };
+      });
+    }
+
+    function drawAnnotation(ctx, ann, imgW, imgH) {
+      // bbox
+      const cx = ann.x * imgW;
+      const cy = ann.y * imgH;
+      const bw = ann.w * imgW;
+      const bh = ann.h * imgH;
+      const x1 = cx - bw / 2;
+      const y1 = cy - bh / 2;
+
+      ctx.strokeStyle = "lime";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x1, y1, bw, bh);
+
+      ctx.fillStyle = "lime";
+      ctx.font = "20px Arial";
+      ctx.fillText(ann.label, x1, y1 - 5);
+
+      // 四点
+      ctx.strokeStyle = "red";
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      for (let i = 0; i < 8; i += 2) {
+        const px = ann.pts[i] * imgW;
+        const py = ann.pts[i+1] * imgH;
+        ctx.lineTo(px, py);
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.moveTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+  </script>
+</body>
+</html>
